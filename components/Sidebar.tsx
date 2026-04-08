@@ -4,16 +4,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const menu = [
-  { href: '/dashboard',             icon: '📊', label: 'Dashboard'     },
-  { href: '/dashboard/transacoes',  icon: '💸', label: 'Transações'    },
-  { href: '/dashboard/contas',      icon: '🏦', label: 'Contas'        },
-  { href: '/dashboard/cartoes',     icon: '💳', label: 'Cartões'       },
-  { href: '/dashboard/metas',       icon: '🎯', label: 'Metas'         },
-  { href: '/dashboard/orcamento',   icon: '📋', label: 'Orçamento'     },
-  { href: '/dashboard/dividas',     icon: '📉', label: 'Dívidas'       },
-  { href: '/dashboard/relatorios',  icon: '📈', label: 'Relatórios'    },
-  { href: '/dashboard/patrimonio',  icon: '🏛️', label: 'Patrimônio'    },
-  { href: '/dashboard/assinaturas', icon: '🔄', label: 'Assinaturas'   },
+  { href: '/dashboard', icon: '📊', label: 'Dashboard' },
+  { href: '/dashboard/transacoes', icon: '💸', label: 'Transações' },
+  { href: '/dashboard/categorias', icon: '🏷️', label: 'Categorias' },
+  { href: '/dashboard/contas', icon: '🏦', label: 'Contas' },
+  { href: '/dashboard/cartoes', icon: '💳', label: 'Cartões' },
+  { href: '/dashboard/metas', icon: '🎯', label: 'Metas' },
+  { href: '/dashboard/orcamento', icon: '📋', label: 'Orçamento' },
+  { href: '/dashboard/dividas', icon: '📉', label: 'Dívidas' },
+  { href: '/dashboard/relatorios', icon: '📈', label: 'Relatórios' },
+  { href: '/dashboard/patrimonio', icon: '🏛️', label: 'Patrimônio' },
+  { href: '/dashboard/assinaturas', icon: '🔄', label: 'Assinaturas' },
 ]
 
 export default function Sidebar() {
@@ -42,11 +43,10 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                ativo
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${ativo
                   ? 'bg-indigo-600 text-white'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
-              }`}
+                }`}
             >
               <span className="text-base">{item.icon}</span>
               {item.label}

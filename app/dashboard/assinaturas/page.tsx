@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-
 const cicloLabels: Record<string, string> = { monthly: 'Mensal', yearly: 'Anual', weekly: 'Semanal' }
 const categoriaIcons: Record<string, string> = {
   streaming: '📺', musica: '🎵', software: '💻', jogos: '🎮',
@@ -13,8 +12,8 @@ const categoriaIcons: Record<string, string> = {
 
 interface Assinatura {
   id: string; name: string; amount: number; billing_cycle: string
-  next_billing: string | null; category: string; color: string; is_active: boolean
-  notes: string | null
+  next_billing: string | null; category: string; color: string
+  is_active: boolean; notes: string | null
 }
 
 export default function AssinaturasPage() {
@@ -36,17 +35,12 @@ export default function AssinaturasPage() {
   async function carregar() {
     const { data: { user } } = await supabase.auth.getUser()
     const { data } = await supabase
-      .from('transactions')
+      .from('subscriptions')
       .select('*')
       .eq('user_id', user!.id)
-      .eq('is_recurring', true)
-      .eq('type', 'expense')
+      .eq('is_active', true)
       .order('amount', { ascending: false })
-
-    // Usamos a tabela de transactions com is_recurring=true
-    // mas também buscamos dados do localStorage para assinaturas manuais
-    const saved = localStorage.getItem('assinaturas_' + user!.id)
-    setAssinaturas(saved ? JSON.parse(saved) : [])
+    setAssinaturas(data ?? [])
     setCarregando(false)
   }
 
@@ -56,40 +50,29 @@ export default function AssinaturasPage() {
     if (!nome.trim()) { setErro('Digite o nome.'); return }
     if (!valor || isNaN(parseFloat(valor))) { setErro('Digite o valor.'); return }
     setSalvando(true); setErro('')
-
     const { data: { user } } = await supabase.auth.getUser()
-    const nova: Assinatura = {
-      id: crypto.randomUUID(),
+    const { error } = await supabase.from('subscriptions').insert({
+      user_id: user!.id,
       name: nome.trim(),
       amount: parseFloat(valor.replace(',', '.')),
       billing_cycle: ciclo,
       next_billing: proximaCobranca || null,
       category: categoria,
       color: cor,
-      is_active: true,
       notes: notas || null,
+    })
+    if (error) { setErro('Erro ao salvar.') } else {
+      setNome(''); setValor(''); setProximaCobranca(''); setNotas('')
+      setCiclo('monthly'); setCategoria('streaming'); setCor('#6366f1')
+      setModalAberto(false); carregar()
     }
-
-    const saved = localStorage.getItem('assinaturas_' + user!.id)
-    const lista = saved ? JSON.parse(saved) : []
-    lista.push(nova)
-    localStorage.setItem('assinaturas_' + user!.id, JSON.stringify(lista))
-
-    setAssinaturas(lista)
-    setNome(''); setValor(''); setProximaCobranca(''); setNotas('')
-    setCiclo('monthly'); setCategoria('streaming'); setCor('#6366f1')
-    setModalAberto(false)
     setSalvando(false)
   }
 
   async function excluir(id: string) {
     if (!confirm('Excluir esta assinatura?')) return
-    const { data: { user } } = await supabase.auth.getUser()
-    const saved = localStorage.getItem('assinaturas_' + user!.id)
-    const lista = saved ? JSON.parse(saved) : []
-    const nova = lista.filter((a: Assinatura) => a.id !== id)
-    localStorage.setItem('assinaturas_' + user!.id, JSON.stringify(nova))
-    setAssinaturas(nova)
+    await supabase.from('subscriptions').update({ is_active: false }).eq('id', id)
+    carregar()
   }
 
   function valorMensal(a: Assinatura) {
@@ -98,10 +81,10 @@ export default function AssinaturasPage() {
     return a.amount
   }
 
-  const totalMensal = assinaturas.filter(a => a.is_active).reduce((acc, a) => acc + valorMensal(a), 0)
+  const totalMensal = assinaturas.reduce((acc, a) => acc + valorMensal(a), 0)
   const totalAnual = totalMensal * 12
 
-  const proximasCobrancas = assinaturas
+  const proximasCobrancas = [...assinaturas]
     .filter(a => a.next_billing)
     .sort((a, b) => new Date(a.next_billing!).getTime() - new Date(b.next_billing!).getTime())
     .slice(0, 3)
@@ -111,7 +94,7 @@ export default function AssinaturasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Assinaturas</h1>
-          <p className="text-gray-400 text-sm mt-1">Controle seus serviços e assinaturas recorrentes</p>
+          <p className="text-gray-400 text-sm mt-1">Controle seus serviços recorrentes</p>
         </div>
         <button onClick={() => setModalAberto(true)}
           className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
@@ -119,32 +102,31 @@ export default function AssinaturasPage() {
         </button>
       </div>
 
-      {/* Resumo */}
       {assinaturas.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
             <p className="text-gray-400 text-sm">Custo mensal total</p>
             <p className="text-2xl font-bold text-red-400 mt-1">{fmt(totalMensal)}</p>
-            <p className="text-gray-600 text-xs mt-1">{assinaturas.filter(a => a.is_active).length} assinaturas ativas</p>
+            <p className="text-gray-600 text-xs mt-1">{assinaturas.length} assinatura{assinaturas.length !== 1 ? 's' : ''} ativa{assinaturas.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
             <p className="text-gray-400 text-sm">Custo anual total</p>
             <p className="text-2xl font-bold text-yellow-400 mt-1">{fmt(totalAnual)}</p>
             <p className="text-gray-600 text-xs mt-1">Projeção 12 meses</p>
           </div>
-          {proximasCobrancas.length > 0 && (
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-              <p className="text-gray-400 text-sm mb-3">Próximas cobranças</p>
-              {proximasCobrancas.map(a => (
-                <div key={a.id} className="flex justify-between items-center mb-2 last:mb-0">
-                  <span className="text-gray-300 text-xs">{a.name}</span>
-                  <span className="text-xs font-medium" style={{ color: a.color }}>
-                    {new Date(a.next_billing! + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+            <p className="text-gray-400 text-sm mb-3">Próximas cobranças</p>
+            {proximasCobrancas.length === 0 ? (
+              <p className="text-gray-600 text-xs">Nenhuma data definida</p>
+            ) : proximasCobrancas.map(a => (
+              <div key={a.id} className="flex justify-between items-center mb-2 last:mb-0">
+                <span className="text-gray-300 text-xs">{a.name}</span>
+                <span className="text-xs font-medium" style={{ color: a.color }}>
+                  {new Date(a.next_billing! + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -166,7 +148,6 @@ export default function AssinaturasPage() {
             const diasRestantes = a.next_billing
               ? Math.ceil((new Date(a.next_billing).getTime() - Date.now()) / 86400000)
               : null
-
             return (
               <div key={a.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 group hover:border-gray-700 transition-colors">
                 <div className="flex items-start justify-between mb-4">
@@ -183,7 +164,6 @@ export default function AssinaturasPage() {
                   <button onClick={() => excluir(a.id)}
                     className="text-gray-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all text-sm">✕</button>
                 </div>
-
                 <div className="flex items-end justify-between">
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Valor cobrado</p>
@@ -203,7 +183,6 @@ export default function AssinaturasPage() {
                     </div>
                   )}
                 </div>
-
                 {a.notes && <p className="text-gray-600 text-xs mt-3 border-t border-gray-800 pt-2">{a.notes}</p>}
               </div>
             )
@@ -211,7 +190,6 @@ export default function AssinaturasPage() {
         </div>
       )}
 
-      {/* Modal */}
       {modalAberto && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -276,7 +254,7 @@ export default function AssinaturasPage() {
               <div>
                 <label className="block text-sm text-gray-300 mb-2 font-medium">Observações (opcional)</label>
                 <input type="text" value={notas} onChange={(e) => setNotas(e.target.value)}
-                  placeholder="Ex: Plano familiar, conta compartilhada..."
+                  placeholder="Ex: Plano familiar..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors" />
               </div>
             </div>

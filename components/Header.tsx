@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 interface HeaderProps {
   user: { email?: string }
@@ -40,7 +41,6 @@ export default function Header({ user, profile }: HeaderProps) {
     inicioMes.setDate(1)
     const fimMes = new Date(inicioMes.getFullYear(), inicioMes.getMonth() + 1, 0)
 
-    // Verifica orçamentos
     const { data: orcamentos } = await supabase
       .from('budgets')
       .select('*, categories(name, icon)')
@@ -56,12 +56,16 @@ export default function Header({ user, profile }: HeaderProps) {
 
     const gastosCat: Record<string, number> = {}
     transacoes?.forEach(t => {
-      if (t.category_id) gastosCat[t.category_id] = (gastosCat[t.category_id] ?? 0) + Number(t.amount)
+      if (t.category_id) {
+        gastosCat[t.category_id] =
+          (gastosCat[t.category_id] ?? 0) + Number(t.amount)
+      }
     })
 
     orcamentos?.forEach(o => {
       const gasto = gastosCat[o.category_id] ?? 0
       const pct = (gasto / Number(o.limit_amount)) * 100
+
       if (pct >= 100) {
         novas.push({
           id: `orc-estourou-${o.id}`,
@@ -81,7 +85,6 @@ export default function Header({ user, profile }: HeaderProps) {
       }
     })
 
-    // Verifica assinaturas próximas (7 dias)
     const { data: assinaturas } = await supabase
       .from('subscriptions')
       .select('*')
@@ -90,19 +93,26 @@ export default function Header({ user, profile }: HeaderProps) {
 
     assinaturas?.forEach(a => {
       if (!a.next_billing) return
-      const dias = Math.ceil((new Date(a.next_billing).getTime() - Date.now()) / 86400000)
+
+      const dias = Math.ceil(
+        (new Date(a.next_billing).getTime() - Date.now()) / 86400000
+      )
+
       if (dias >= 0 && dias <= 7) {
         novas.push({
           id: `assin-${a.id}`,
           tipo: dias <= 2 ? 'alerta' : 'info',
-          titulo: `Cobrança em ${dias === 0 ? 'hoje' : `${dias} dia${dias !== 1 ? 's' : ''}`}`,
-          descricao: `${a.name} — R$ ${Number(a.amount).toFixed(2).replace('.', ',')}`,
+          titulo: `Cobrança em ${
+            dias === 0 ? 'hoje' : `${dias} dia${dias !== 1 ? 's' : ''}`
+          }`,
+          descricao: `${a.name} — R$ ${Number(a.amount)
+            .toFixed(2)
+            .replace('.', ',')}`,
           icone: '💳'
         })
       }
     })
 
-    // Verifica metas próximas do prazo
     const { data: metas } = await supabase
       .from('goals')
       .select('*')
@@ -111,20 +121,29 @@ export default function Header({ user, profile }: HeaderProps) {
 
     metas?.forEach(m => {
       if (!m.deadline) return
-      const dias = Math.ceil((new Date(m.deadline).getTime() - Date.now()) / 86400000)
+
+      const dias = Math.ceil(
+        (new Date(m.deadline).getTime() - Date.now()) / 86400000
+      )
+
       if (dias >= 0 && dias <= 30) {
-        const pct = Math.min((Number(m.current_amount) / Number(m.target_amount)) * 100, 100)
+        const pct = Math.min(
+          (Number(m.current_amount) / Number(m.target_amount)) * 100,
+          100
+        )
+
         novas.push({
           id: `meta-${m.id}`,
           tipo: dias <= 7 ? 'alerta' : 'info',
           titulo: `Meta expirando: ${m.name}`,
-          descricao: `${pct.toFixed(0)}% concluída · ${dias} dia${dias !== 1 ? 's' : ''} restante${dias !== 1 ? 's' : ''}`,
+          descricao: `${pct.toFixed(0)}% concluída · ${dias} dia${
+            dias !== 1 ? 's' : ''
+          } restante${dias !== 1 ? 's' : ''}`,
           icone: '🎯'
         })
       }
     })
 
-    // Dívidas com parcelas próximas
     const { data: dividas } = await supabase
       .from('debts')
       .select('*')
@@ -135,8 +154,12 @@ export default function Header({ user, profile }: HeaderProps) {
       novas.push({
         id: 'dividas-ativas',
         tipo: 'info',
-        titulo: `${dividas.length} dívida${dividas.length !== 1 ? 's' : ''} em aberto`,
-        descricao: `Total: R$ ${dividas.reduce((a: number, d: any) => a + Number(d.remaining_amount), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        titulo: `${dividas.length} dívida${
+          dividas.length !== 1 ? 's' : ''
+        } em aberto`,
+        descricao: `Total: R$ ${dividas
+          .reduce((a: number, d: any) => a + Number(d.remaining_amount), 0)
+          .toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         icone: '📉'
       })
     }
@@ -146,6 +169,7 @@ export default function Header({ user, profile }: HeaderProps) {
 
   useEffect(() => {
     carregarNotificacoes()
+
     const salvas = localStorage.getItem('notif_lidas')
     if (salvas) setLidas(JSON.parse(salvas))
   }, [])
@@ -178,13 +202,19 @@ export default function Header({ user, profile }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <ThemeToggle />
+
         {/* Botão de notificações */}
         <div className="relative">
           <button
-            onClick={() => { setPainelAberto(!painelAberto); if (!painelAberto) marcarLidas() }}
+            onClick={() => {
+              setPainelAberto(!painelAberto)
+              if (!painelAberto) marcarLidas()
+            }}
             className="relative w-9 h-9 bg-gray-800 hover:bg-gray-700 rounded-xl flex items-center justify-center transition-colors"
           >
             <span className="text-lg">🔔</span>
+
             {naoLidas.length > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-xs flex items-center justify-center font-bold">
                 {naoLidas.length > 9 ? '9+' : naoLidas.length}
@@ -192,12 +222,16 @@ export default function Header({ user, profile }: HeaderProps) {
             )}
           </button>
 
-          {/* Painel de notificações */}
           {painelAberto && (
             <div className="absolute right-0 top-12 w-80 bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
                 <p className="text-white font-semibold text-sm">Notificações</p>
-                <button onClick={() => setPainelAberto(false)} className="text-gray-500 hover:text-white text-lg">✕</button>
+                <button
+                  onClick={() => setPainelAberto(false)}
+                  className="text-gray-500 hover:text-white text-lg"
+                >
+                  ✕
+                </button>
               </div>
 
               <div className="max-h-96 overflow-y-auto">
@@ -205,16 +239,25 @@ export default function Header({ user, profile }: HeaderProps) {
                   <div className="text-center py-8">
                     <p className="text-3xl mb-2">✅</p>
                     <p className="text-gray-500 text-sm">Tudo em ordem!</p>
-                    <p className="text-gray-600 text-xs mt-1">Nenhuma notificação pendente</p>
+                    <p className="text-gray-600 text-xs mt-1">
+                      Nenhuma notificação pendente
+                    </p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-2">
                     {notificacoes.map((n) => (
-                      <div key={n.id} className={`flex gap-3 p-3 rounded-xl border ${corTipo[n.tipo]}`}>
+                      <div
+                        key={n.id}
+                        className={`flex gap-3 p-3 rounded-xl border ${corTipo[n.tipo]}`}
+                      >
                         <span className="text-xl flex-shrink-0">{n.icone}</span>
                         <div>
-                          <p className="font-medium text-sm text-white">{n.titulo}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">{n.descricao}</p>
+                          <p className="font-medium text-sm text-white">
+                            {n.titulo}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {n.descricao}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -225,7 +268,9 @@ export default function Header({ user, profile }: HeaderProps) {
               {notificacoes.length > 0 && (
                 <div className="px-4 py-3 border-t border-gray-800">
                   <p className="text-gray-600 text-xs text-center">
-                    {notificacoes.length} notificaç{notificacoes.length !== 1 ? 'ões' : 'ão'} encontrada{notificacoes.length !== 1 ? 's' : ''}
+                    {notificacoes.length} notificaç
+                    {notificacoes.length !== 1 ? 'ões' : 'ão'} encontrada
+                    {notificacoes.length !== 1 ? 's' : ''}
                   </p>
                 </div>
               )}
@@ -233,7 +278,6 @@ export default function Header({ user, profile }: HeaderProps) {
           )}
         </div>
 
-        {/* Avatar */}
         <div className="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
           {nomeExibido[0].toUpperCase()}
         </div>

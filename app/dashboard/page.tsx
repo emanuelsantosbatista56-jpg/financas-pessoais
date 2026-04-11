@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -6,6 +7,8 @@ const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
 
   const hoje = new Date()
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString()
@@ -18,12 +21,12 @@ export default async function DashboardPage() {
     { data: ultimasTransacoes },
   ] = await Promise.all([
     supabase.from('transactions').select('*')
-      .eq('user_id', user!.id).gte('date', inicioMes).lte('date', fimMes),
-    supabase.from('accounts').select('balance').eq('user_id', user!.id).eq('is_active', true),
-    supabase.from('goals').select('*').eq('user_id', user!.id).eq('is_completed', false).limit(3),
+      .eq('user_id', user.id).gte('date', inicioMes).lte('date', fimMes),
+    supabase.from('accounts').select('balance').eq('user_id', user.id).eq('is_active', true),
+    supabase.from('goals').select('*').eq('user_id', user.id).eq('is_completed', false).limit(3),
     supabase.from('transactions')
       .select('*, categories(name, color, icon), accounts(name)')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .order('date', { ascending: false })
       .limit(5),
   ])
@@ -90,7 +93,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Linha 2: Últimas transações + Metas */}
+      {/* Linha 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Últimas transações */}

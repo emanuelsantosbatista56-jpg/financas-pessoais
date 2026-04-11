@@ -12,16 +12,23 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        model: 'claude-opus-4-5',
+        max_tokens: 1024,
         system,
         messages,
       }),
     })
 
     const data = await response.json()
+
+    if (data.error) {
+      console.error('Anthropic error:', data.error)
+      return NextResponse.json({ error: data.error.message }, { status: 400 })
+    }
+
     return NextResponse.json(data)
   } catch (error) {
+    console.error('Route error:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

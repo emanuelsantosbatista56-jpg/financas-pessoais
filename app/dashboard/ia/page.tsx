@@ -155,10 +155,11 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
       const data = await response.json()
       const resposta = data.content?.[0]?.text ?? 'Desculpe, não consegui processar sua pergunta.'
       setMensagens(prev => [...prev, { role: 'assistant', content: resposta }])
-    } catch {
+    } catch (error) {
+      console.error('Erro:', error)
       setMensagens(prev => [...prev, {
         role: 'assistant',
-        content: 'Erro ao conectar com a IA. Tente novamente em alguns instantes.'
+        content: `Erro: ${error instanceof Error ? error.message : 'Desconhecido'}`
       }])
     }
 

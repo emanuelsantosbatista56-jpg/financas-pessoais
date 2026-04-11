@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system,
         messages,
@@ -20,11 +20,8 @@ export async function POST(request: NextRequest) {
     })
 
     const data = await response.json()
-
-    if (data.error) {
-      console.error('Anthropic error:', data.error)
-      return NextResponse.json({ error: data.error.message }, { status: 400 })
-    }
+    console.log('Anthropic response status:', response.status)
+    console.log('Anthropic response:', JSON.stringify(data).substring(0, 500))
 
     return NextResponse.json(data)
   } catch (error) {

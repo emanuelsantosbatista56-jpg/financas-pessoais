@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 const menu = [
   { href: '/dashboard',             icon: '📊', label: 'Dashboard'     },
+  { href: '/dashboard/ia', icon: '🤖', label: 'IA Financeira' },
   { href: '/dashboard/transacoes',  icon: '💸', label: 'Transações'    },
   { href: '/dashboard/categorias',  icon: '🏷️', label: 'Categorias'    },
   { href: '/dashboard/contas',      icon: '🏦', label: 'Contas'        },

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     }))
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,23 +28,14 @@ export async function POST(request: NextRequest) {
     )
 
     const data = await response.json()
-    console.log('Gemini status:', response.status)
-    console.log('Gemini data:', JSON.stringify(data).substring(0, 500))
 
     if (data.error) {
-      console.error('Gemini error:', data.error)
-      return NextResponse.json({ content: [{ text: `Erro Gemini: ${data.error.message}` }] })
+      return NextResponse.json({ content: [{ text: `Erro: ${data.error.message}` }] })
     }
 
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text
-    if (!texto) {
-      console.error('Sem texto na resposta:', JSON.stringify(data))
-      return NextResponse.json({ content: [{ text: 'Resposta vazia do Gemini.' }] })
-    }
-
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Não consegui processar.'
     return NextResponse.json({ content: [{ text: texto }] })
   } catch (error) {
-    console.error('Erro:', error)
-    return NextResponse.json({ content: [{ text: `Erro: ${error}` }] })
+    return NextResponse.json({ content: [{ text: `Erro interno: ${error}` }] })
   }
 }

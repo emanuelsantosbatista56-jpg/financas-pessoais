@@ -20,12 +20,8 @@ export async function POST(request: NextRequest) {
     })
 
     const data = await response.json()
-    console.log('Anthropic response status:', response.status)
-    console.log('Anthropic response:', JSON.stringify(data).substring(0, 500))
-
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Route error:', error)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

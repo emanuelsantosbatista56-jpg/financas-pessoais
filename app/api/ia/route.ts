@@ -4,7 +4,6 @@ export async function POST(request: NextRequest) {
   try {
     const { messages, system } = await request.json()
 
-    // Monta o histórico no formato do Gemini
     const contents = messages.map((m: { role: string; content: string }) => ({
       role: m.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: m.content }],
@@ -29,9 +28,23 @@ export async function POST(request: NextRequest) {
     )
 
     const data = await response.json()
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Não consegui processar.'
+    console.log('Gemini status:', response.status)
+    console.log('Gemini data:', JSON.stringify(data).substring(0, 500))
+
+    if (data.error) {
+      console.error('Gemini error:', data.error)
+      return NextResponse.json({ content: [{ text: `Erro Gemini: ${data.error.message}` }] })
+    }
+
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text
+    if (!texto) {
+      console.error('Sem texto na resposta:', JSON.stringify(data))
+      return NextResponse.json({ content: [{ text: 'Resposta vazia do Gemini.' }] })
+    }
+
     return NextResponse.json({ content: [{ text: texto }] })
   } catch (error) {
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    console.error('Erro:', error)
+    return NextResponse.json({ content: [{ text: `Erro: ${error}` }] })
   }
 }

@@ -43,7 +43,6 @@ export default function IAPage() {
       { data: orcamentos },
       { data: dividas },
       { data: assinaturas },
-      { data: categorias },
     ] = await Promise.all([
       supabase.from('transactions').select('*, categories(name)')
         .eq('user_id', user.id).gte('date', inicioMes).lte('date', fimMes),
@@ -54,7 +53,6 @@ export default function IAPage() {
       supabase.from('budgets').select('*, categories(name)').eq('user_id', user.id),
       supabase.from('debts').select('*').eq('user_id', user.id).eq('is_active', true),
       supabase.from('subscriptions').select('*').eq('user_id', user.id).eq('is_active', true),
-      supabase.from('categories').select('*').eq('user_id', user.id),
     ])
 
     const fmt = (v: number) => `R$ ${v.toFixed(2).replace('.', ',')}`
@@ -63,14 +61,12 @@ export default function IAPage() {
     const despesasMes = transacoesMes?.filter(t => t.type === 'expense').reduce((a, t) => a + Number(t.amount), 0) ?? 0
     const saldoTotal = contas?.reduce((a, c) => a + Number(c.balance), 0) ?? 0
 
-    // Gastos por categoria no mês
     const gastosCat: Record<string, number> = {}
     transacoesMes?.filter(t => t.type === 'expense').forEach(t => {
       const cat = (t as any).categories?.name ?? 'Sem categoria'
       gastosCat[cat] = (gastosCat[cat] ?? 0) + Number(t.amount)
     })
 
-    // Gastos por mês no ano
     const gastosMeses: Record<string, { rec: number; desp: number }> = {}
     transacoesAno?.forEach(t => {
       const mes = t.date.substring(0, 7)
@@ -131,9 +127,7 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
     setContextoCarregado(true)
   }
 
-  useEffect(() => {
-    carregarContexto()
-  }, [])
+  useEffect(() => { carregarContexto() }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -149,12 +143,10 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
     setCarregando(true)
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/ia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
           system: contexto,
           messages: novasMensagens.map(m => ({ role: m.role, content: m.content })),
         }),
@@ -162,7 +154,6 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
 
       const data = await response.json()
       const resposta = data.content?.[0]?.text ?? 'Desculpe, não consegui processar sua pergunta.'
-
       setMensagens(prev => [...prev, { role: 'assistant', content: resposta }])
     } catch {
       setMensagens(prev => [...prev, {
@@ -182,7 +173,6 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
 
   return (
     <div className="flex flex-col h-[calc(100vh-120px)] max-w-3xl mx-auto">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-xl">🤖</div>
         <div>
@@ -193,10 +183,7 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
         </div>
       </div>
 
-      {/* Área de chat */}
       <div className="flex-1 bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden flex flex-col">
-
-        {/* Mensagens */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {mensagens.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center py-8">
@@ -207,12 +194,8 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
                 {sugestoesIniciais.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => enviar(s)}
-                    disabled={!contextoCarregado}
-                    className="text-left px-4 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500 rounded-xl text-gray-300 text-sm transition-all disabled:opacity-50"
-                  >
+                  <button key={s} onClick={() => enviar(s)} disabled={!contextoCarregado}
+                    className="text-left px-4 py-3 bg-gray-800 hover:bg-gray-700 border border-gray-700 hover:border-indigo-500 rounded-xl text-gray-300 text-sm transition-all disabled:opacity-50">
                     {s}
                   </button>
                 ))}
@@ -223,9 +206,7 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
           {mensagens.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1">
-                  🤖
-                </div>
+                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1">🤖</div>
               )}
               <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                 msg.role === 'user'
@@ -234,23 +215,17 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
               }`}>
                 {msg.role === 'assistant' ? (
                   <div dangerouslySetInnerHTML={{ __html: formatarTexto(msg.content) }} />
-                ) : (
-                  msg.content
-                )}
+                ) : msg.content}
               </div>
               {msg.role === 'user' && (
-                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm ml-2 flex-shrink-0 mt-1">
-                  👤
-                </div>
+                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-sm ml-2 flex-shrink-0 mt-1">👤</div>
               )}
             </div>
           ))}
 
           {carregando && (
             <div className="flex justify-start">
-              <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm mr-2 flex-shrink-0">
-                🤖
-              </div>
+              <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-sm mr-2 flex-shrink-0">🤖</div>
               <div className="bg-gray-800 px-4 py-3 rounded-2xl rounded-bl-sm">
                 <div className="flex gap-1 items-center h-4">
                   <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -260,11 +235,9 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
               </div>
             </div>
           )}
-
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
         <div className="border-t border-gray-800 p-4">
           {mensagens.length > 0 && (
             <div className="flex gap-2 mb-3 flex-wrap">
@@ -277,20 +250,13 @@ Responda sempre com base nesses dados reais. Se o usuário perguntar algo que n�
             </div>
           )}
           <div className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+            <input type="text" value={input} onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && enviar()}
               placeholder={contextoCarregado ? 'Pergunte sobre suas finanças...' : 'Carregando dados...'}
               disabled={!contextoCarregado || carregando}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50 text-sm"
-            />
-            <button
-              onClick={() => enviar()}
-              disabled={!input.trim() || carregando || !contextoCarregado}
-              className="w-11 h-11 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 text-white rounded-xl transition-colors flex items-center justify-center"
-            >
+              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors disabled:opacity-50 text-sm" />
+            <button onClick={() => enviar()} disabled={!input.trim() || carregando || !contextoCarregado}
+              className="w-11 h-11 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 text-white rounded-xl transition-colors flex items-center justify-center">
               <span className="text-lg">↑</span>
             </button>
           </div>

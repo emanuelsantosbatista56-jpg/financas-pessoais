@@ -1,15 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #030712;
-}
-
-.dark {
-  --background: #030712;
-  --foreground: #f9fafb;
-}
-
 * {
   box-sizing: border-box;
   padding: 0;
@@ -20,27 +10,3 @@ html, body {
   max-width: 100vw;
   overflow-x: hidden;
 }
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-}
-
-/* Modo claro — sobrescreve as cores do Tailwind */
-html:not(.dark) .bg-gray-950 { background-color: #f1f5f9 !important; }
-html:not(.dark) .bg-gray-900 { background-color: #ffffff !important; }
-html:not(.dark) .bg-gray-800 { background-color: #f1f5f9 !important; }
-html:not(.dark) .bg-gray-700 { background-color: #e2e8f0 !important; }
-html:not(.dark) .border-gray-800 { border-color: #e2e8f0 !important; }
-html:not(.dark) .border-gray-700 { border-color: #cbd5e1 !important; }
-html:not(.dark) .text-white { color: #0f172a !important; }
-html:not(.dark) .text-gray-100 { color: #1e293b !important; }
-html:not(.dark) .text-gray-200 { color: #334155 !important; }
-html:not(.dark) .text-gray-300 { color: #475569 !important; }
-html:not(.dark) .text-gray-400 { color: #64748b !important; }
-html:not(.dark) .text-gray-500 { color: #94a3b8 !important; }
-html:not(.dark) .text-gray-600 { color: #94a3b8 !important; }
-html:not(.dark) .text-gray-700 { color: #cbd5e1 !important; }
-html:not(.dark) .placeholder-gray-500::placeholder { color: #94a3b8 !important; }
-html:not(.dark) .divide-gray-800 > * + * { border-color: #e2e8f0 !important; }
-html:not(.dark) .border-dashed { border-color: #cbd5e1 !important; }

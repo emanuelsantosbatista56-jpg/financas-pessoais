@@ -12,16 +12,21 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 1024,
         system,
         messages,
       }),
     })
 
-    const data = await response.json()
+    const text = await response.text()
+    console.log('Status:', response.status)
+    console.log('Response:', text.substring(0, 300))
+
+    const data = JSON.parse(text)
     return NextResponse.json(data)
   } catch (error) {
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+    console.error('Error:', error)
+    return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

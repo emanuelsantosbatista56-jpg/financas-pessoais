@@ -10,15 +10,14 @@ export async function POST(request: NextRequest) {
     }))
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: system }],
-          },
-          contents,
+          contents: [
+            { role: 'user', parts: [{ text: system + '\n\nUsuário: ' + messages[messages.length - 1].content }] }
+          ],
           generationConfig: {
             maxOutputTokens: 1024,
             temperature: 0.7,

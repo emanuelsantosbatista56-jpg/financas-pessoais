@@ -7,43 +7,25 @@ export async function POST(request: NextRequest) {
     const ultimaMensagem = messages[messages.length - 1].content
     const prompt = `${system}\n\nPergunta: ${ultimaMensagem}`
 
-    // Tenta vários modelos em sequência
-    const modelos = [
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-1.0-pro',
-    ]
-
-    let texto = ''
-    let erros = []
-
-    for (const modelo of modelos) {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/${modelo}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
-          }),
-        }
-      )
-
-      const data = await response.json()
-
-      if (!data.error && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        texto = data.candidates[0].content.parts[0].text
-        break
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.7 },
+        }),
       }
+    )
 
-      erros.push(`${modelo}: ${data.error?.message ?? 'sem resposta'}`)
+    const data = await response.json()
+
+    if (data.error) {
+      return NextResponse.json({ content: [{ text: `Erro: ${data.error.message}` }] })
     }
 
-    if (!texto) {
-      return NextResponse.json({ content: [{ text: `Modelos tentados: ${erros.join(' | ')}` }] })
-    }
-
+    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Sem resposta.'
     return NextResponse.json({ content: [{ text: texto }] })
   } catch (error) {
     return NextResponse.json({ content: [{ text: `Erro: ${error}` }] })

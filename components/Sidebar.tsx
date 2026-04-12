@@ -8,6 +8,7 @@ const menu = [
   { href: '/dashboard',             icon: '📊', label: 'Dashboard'     },
   { href: '/dashboard/ia', icon: '🤖', label: 'IA Financeira' },
   { href: '/dashboard/transacoes',  icon: '💸', label: 'Transações'    },
+  { href: '/dashboard/recorrencias', icon: '🔁', label: 'Recorrências' },
   { href: '/dashboard/categorias',  icon: '🏷️', label: 'Categorias'    },
   { href: '/dashboard/contas',      icon: '🏦', label: 'Contas'        },
   { href: '/dashboard/cartoes',     icon: '💳', label: 'Cartões'       },

@@ -18,6 +18,7 @@ const menu = [
   { href: '/dashboard/relatorios',  icon: '📈', label: 'Relatórios'    },
   { href: '/dashboard/patrimonio',  icon: '🏛️', label: 'Patrimônio'    },
   { href: '/dashboard/assinaturas', icon: '🔄', label: 'Assinaturas'   },
+  { href: '/dashboard/transferencias', icon: '↔️', label: 'Transferências' },
   { href: '/dashboard/importar', icon: '📥', label: 'Importar extrato' },
 ]
 

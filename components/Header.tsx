@@ -168,7 +168,7 @@ export default function Header({ user, profile }: HeaderProps) {
 
   return (
     <header className="bg-gray-900 border-b border-gray-800 px-4 lg:px-6 py-4 flex items-center justify-between relative z-30">
-      <div className="pl-12 lg:pl-0">
+      <div className="pl-14 lg:pl-0">
         <p className="text-gray-400 text-sm capitalize">{hoje}</p>
         <h2 className="text-white font-semibold">Olá, {nomeExibido} 👋</h2>
       </div>

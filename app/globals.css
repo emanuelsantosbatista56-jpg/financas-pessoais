@@ -10,3 +10,21 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+@media print {
+  body > * { display: none !important; }
+  .print-area { display: block !important; }
+  
+  nav, header, button, aside { display: none !important; }
+  
+  main { padding: 0 !important; margin: 0 !important; }
+  
+  .bg-gray-900 { background-color: white !important; }
+  .bg-gray-800 { background-color: #f3f4f6 !important; }
+  .text-white { color: black !important; }
+  .text-gray-300 { color: #374151 !important; }
+  .text-gray-400 { color: #6b7280 !important; }
+  .text-gray-500 { color: #9ca3af !important; }
+  .border-gray-800 { border-color: #e5e7eb !important; }
+  .border-gray-700 { border-color: #d1d5db !important; }
+}

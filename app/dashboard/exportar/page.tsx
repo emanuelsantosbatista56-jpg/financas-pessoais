@@ -67,18 +67,12 @@ export default function ExportarPage() {
   useEffect(() => { carregar() }, [mes])
 
   async function gerarPDF() {
-    if (!relatorioRef.current) return
-    setGerando(true)
-
-    try {
-      const { default: jsPDF } = await import('jspdf')
-      const { default: html2canvas } = await import('html2canvas')
-
-      const canvas = await html2canvas(relatorioRef.current, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#111827',
-      })
+  setGerando(true)
+  setTimeout(() => {
+    window.print()
+    setGerando(false)
+  }, 500)
+}
 
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF('p', 'mm', 'a4')

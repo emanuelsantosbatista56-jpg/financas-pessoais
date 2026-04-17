@@ -20,6 +20,7 @@ const menu = [
   { href: '/dashboard/assinaturas', icon: '🔄', label: 'Assinaturas'   },
   { href: '/dashboard/transferencias', icon: '↔️', label: 'Transferências' },
   { href: '/dashboard/importar', icon: '📥', label: 'Importar extrato' },
+  { href: '/dashboard/exportar', icon: '📥', label: 'Exportar PDF' },
 ]
 
 export default function Sidebar() {

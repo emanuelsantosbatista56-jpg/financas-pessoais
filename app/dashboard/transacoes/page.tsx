@@ -46,6 +46,10 @@ export default function TransacoesPage() {
   const [notas, setNotas] = useState('')
   const [erro, setErro] = useState('')
 
+  // Categorização automática
+  const [sugestaoCategoria, setSugestaoCategoria] = useState('')
+  const [carregandoCategoria, setCarregandoCategoria] = useState(false)
+
   // Formulário edição
   const [editTipo, setEditTipo] = useState<'income' | 'expense'>('expense')
   const [editDescricao, setEditDescricao] = useState('')
@@ -76,6 +80,25 @@ export default function TransacoesPage() {
 
   useEffect(() => { carregar() }, [])
 
+  async function sugerirCategoria(texto: string) {
+    if (texto.length < 3 || categorias.length === 0) return
+    setCarregandoCategoria(true)
+    setSugestaoCategoria('')
+    try {
+      const response = await fetch('/api/categorizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ descricao: texto, categorias }),
+      })
+      const data = await response.json()
+      if (data.categoria && data.categoria !== 'Sem categoria') {
+        const cat = categorias.find(c => c.name.toLowerCase() === data.categoria.toLowerCase())
+        if (cat) setSugestaoCategoria(cat.name)
+      }
+    } catch {}
+    setCarregandoCategoria(false)
+  }
+
   function abrirEdicao(t: Transacao) {
     setModalEditando(t)
     setEditTipo(t.type as 'income' | 'expense')
@@ -96,7 +119,6 @@ export default function TransacoesPage() {
     const valorNum = parseFloat(editValor.replace(',', '.'))
     const t = modalEditando!
 
-    // Reverte saldo antigo
     const { data: contaAntiga } = await supabase.from('accounts').select('balance').eq('id', t.account_id).single()
     if (contaAntiga) {
       const saldoRevertido = t.type === 'income'
@@ -105,7 +127,6 @@ export default function TransacoesPage() {
       await supabase.from('accounts').update({ balance: saldoRevertido }).eq('id', t.account_id)
     }
 
-    // Atualiza transação
     await supabase.from('transactions').update({
       account_id: editContaId,
       category_id: editCategoriaId || null,
@@ -116,7 +137,6 @@ export default function TransacoesPage() {
       is_paid: editIsPago,
     }).eq('id', t.id)
 
-    // Aplica novo saldo
     const { data: contaNova } = await supabase.from('accounts').select('balance').eq('id', editContaId).single()
     if (contaNova) {
       const novoSaldo = editTipo === 'income'
@@ -155,6 +175,7 @@ export default function TransacoesPage() {
         await supabase.from('accounts').update({ balance: novoSaldo }).eq('id', contaId)
       }
       setDescricao(''); setValor(''); setNotas(''); setCategoriaId('')
+      setSugestaoCategoria('')
       setData(new Date().toISOString().split('T')[0])
       setModalAberto(false); carregar()
     } else { setErro('Erro ao salvar.') }
@@ -372,7 +393,7 @@ export default function TransacoesPage() {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white font-bold text-lg">Nova transação</h2>
-              <button onClick={() => { setModalAberto(false); setErro('') }} className="text-gray-400 hover:text-white text-xl">✕</button>
+              <button onClick={() => { setModalAberto(false); setErro(''); setSugestaoCategoria('') }} className="text-gray-400 hover:text-white text-xl">✕</button>
             </div>
             <div className="flex bg-gray-800 rounded-xl p-1 mb-5">
               <button onClick={() => setTipo('expense')} className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${tipo === 'expense' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>📉 Despesa</button>
@@ -381,9 +402,36 @@ export default function TransacoesPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-2 font-medium">Descrição</label>
-                <input type="text" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Supermercado, Salário..."
+                <input type="text" value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                  onBlur={(e) => sugerirCategoria(e.target.value)}
+                  placeholder="Ex: Supermercado, Salário..."
                   className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors" />
               </div>
+
+              {/* Sugestão de categoria */}
+              {(sugestaoCategoria || carregandoCategoria) && !categoriaId && (
+                <div className="flex items-center gap-2 p-3 bg-indigo-900/30 border border-indigo-800/50 rounded-xl">
+                  <span className="text-indigo-300 text-xs">🤖</span>
+                  {carregandoCategoria ? (
+                    <span className="text-indigo-400 text-xs">Analisando categoria...</span>
+                  ) : (
+                    <>
+                      <span className="text-indigo-300 text-xs">Sugestão:</span>
+                      <button
+                        onClick={() => {
+                          const cat = categorias.find(c => c.name === sugestaoCategoria)
+                          if (cat) { setCategoriaId(cat.id); setSugestaoCategoria('') }
+                        }}
+                        className="text-indigo-400 hover:text-indigo-300 text-xs font-medium underline transition-colors">
+                        {sugestaoCategoria}
+                      </button>
+                      <button onClick={() => setSugestaoCategoria('')} className="text-gray-600 hover:text-gray-400 text-xs ml-auto">✕</button>
+                    </>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm text-gray-300 mb-2 font-medium">Valor</label>
                 <div className="relative">
@@ -409,7 +457,7 @@ export default function TransacoesPage() {
               {categoriasFiltradas.length > 0 && (
                 <div>
                   <label className="block text-sm text-gray-300 mb-2 font-medium">Categoria (opcional)</label>
-                  <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}
+                  <select value={categoriaId} onChange={(e) => { setCategoriaId(e.target.value); setSugestaoCategoria('') }}
                     className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-colors">
                     <option value="">Sem categoria</option>
                     {categoriasFiltradas.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -430,8 +478,10 @@ export default function TransacoesPage() {
             </div>
             {erro && <div className="mt-4 p-3 bg-red-900/50 border border-red-800 rounded-xl text-red-300 text-sm">{erro}</div>}
             <div className="flex gap-3 mt-6">
-              <button onClick={() => { setModalAberto(false); setErro('') }} className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-xl text-sm font-medium transition-colors">Cancelar</button>
-              <button onClick={salvar} disabled={salvando} className={`flex-1 text-white py-3 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${tipo === 'income' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'}`}>
+              <button onClick={() => { setModalAberto(false); setErro(''); setSugestaoCategoria('') }}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-white py-3 rounded-xl text-sm font-medium transition-colors">Cancelar</button>
+              <button onClick={salvar} disabled={salvando}
+                className={`flex-1 text-white py-3 rounded-xl text-sm font-medium transition-colors disabled:opacity-60 ${tipo === 'income' ? 'bg-green-600 hover:bg-green-500' : 'bg-red-600 hover:bg-red-500'}`}>
                 {salvando ? 'Salvando...' : `Salvar ${tipo === 'income' ? 'receita' : 'despesa'}`}
               </button>
             </div>

@@ -21,6 +21,7 @@ const menu = [
   { href: '/dashboard/transferencias', icon: '↔️', label: 'Transferências' },
   { href: '/dashboard/importar', icon: '📥', label: 'Importar extrato' },
   { href: '/dashboard/exportar', icon: '📥', label: 'Exportar PDF' },
+  { href: '/dashboard/previsao', icon: '🔮', label: 'Previsão' },
 ]
 
 export default function Sidebar() {

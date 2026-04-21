@@ -22,6 +22,7 @@ const menu = [
   { href: '/dashboard/importar', icon: '📥', label: 'Importar extrato' },
   { href: '/dashboard/exportar', icon: '📥', label: 'Exportar PDF' },
   { href: '/dashboard/previsao', icon: '🔮', label: 'Previsão' },
+  { href: '/dashboard/alertas', icon: '📧', label: 'Alertas Email' },
 ]
 
 export default function Sidebar() {
